@@ -33,4 +33,4 @@ const myInterval = setInterval(() => {
       myChart.update();
     })
     .catch(() => clearInterval(myInterval))
-}, 1000);
+}, 1500);
