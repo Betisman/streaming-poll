@@ -1,14 +1,12 @@
 const data = {
-  labels: [
-    'Baumann',
-    'Lucas',
-  ],
   datasets: [{
-    data: [0, 0],
+    data: [1, 1],
     backgroundColor: [
-      'rgb(255, 99, 132)',
-      'rgb(54, 162, 235)',
-    ]
+      'rgb(224, 224, 224)',
+      'rgb(0, 143, 95)',
+    ],
+    borderWidth: 6,
+    borderColor: 'rgb(26, 26, 26)',
   }]
 };
 
