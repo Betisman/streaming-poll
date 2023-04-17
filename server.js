@@ -50,7 +50,9 @@ const db = require('./db')();
     console.log('battle!!')
     await ack();
     const { user_id: userId, text, channel_id: channelId } = command;
-    const blocks = battleCommand({ teams: TEAMS, round: ROUND, eventName: EVENT_NAME, userId });
+    const { rows: [{ user_type: userType }] } = await pg.formattedQuery('select_user', { slackId: userId });
+    const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
+    const blocks = battleCommand({ teams: TEAMS, round: ROUND, eventName: EVENT_NAME, userId, pollStatus, userType });
     const block = {
       channel: channelId,
       user: userId,
@@ -77,6 +79,31 @@ const db = require('./db')();
         await pg.formattedQuery('insert_vote', { userId, teamId });
         console.log(JSON.stringify(body))
         await respond(`<@${userId}>, you have just voted for ${teamId}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  })
+
+  slackApp.action({ block_id: 'admin_open_close_polls' }, async ({ ack, body, respond }) => {
+    await ack();
+    console.log('admin_open_close_polls!');
+    try {
+      console.log(JSON.stringify(body))
+      const [action] = body?.actions;
+      if (body.actions) {
+        const userId = body.user.id;
+        const { value } = action;
+
+        const query = value === 'open_polls' ? 'open_poll' : 'close_poll';
+        await pg.formattedQuery(query, { readableId: EVENT_READABLE_ID });
+
+        const event = value === 'open_polls' ? 'opened' : 'closed';
+        const emoji = {
+          open_polls: ':white_check_mark:',
+          close_polls: ':x:',
+        }[value];
+        await respond(`${emoji} :mailbox: <@${userId}>, have just ${event} the polls!`);
       }
     } catch (error) {
       console.error(error);

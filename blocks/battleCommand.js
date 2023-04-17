@@ -1,4 +1,42 @@
-const battleCommand = ({ teams, round, eventName, userId }) => ({
+const adminBlocks = ({ pollStatus }) => ([
+  {
+    "type": "divider"
+  },
+  {
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: ':warning: You are an admin:',
+    },
+  },
+  {
+    type: 'actions',
+    block_id: 'admin_open_close_polls',
+    elements: [
+      pollStatus === 'closed' ? {
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: 'Open polls',
+          emoji: true,
+        },
+        style: 'primary',
+        value: 'open_polls',
+      } : {
+        type: 'button',
+        text: {
+          type: 'plain_text',
+          text: 'Close polls',
+          emoji: true,
+        },
+        style: 'danger',
+        value: 'close_polls',
+      },
+    ],
+  }
+]);
+
+const battleCommand = ({ teams, round, eventName, userId, pollStatus, userType }) => ({
   "blocks": [
     {
       "type": "section",
@@ -21,7 +59,8 @@ const battleCommand = ({ teams, round, eventName, userId }) => ({
           style,
           "value": JSON.stringify({ round, teamId, userId }),
         }))
-    }
+    },
+    ...(userType === 'admin' ? adminBlocks({ pollStatus }) : []),
   ]
 });
 

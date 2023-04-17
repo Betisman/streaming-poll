@@ -1,1 +1,1 @@
-SELECT * from settings WHERE readable_id = %L:readableId;
+SELECT * FROM settings WHERE readable_id = %L:readableId;
