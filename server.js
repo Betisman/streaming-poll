@@ -76,6 +76,15 @@ const db = require('./db')();
         const value = JSON.parse(action.value);
         const { teamId } = value;
 
+        const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
+
+        if (pollStatus === 'closed') {
+          const { rows: [{ voted_for: votedFor }] } = await pg.formattedQuery('select_last_vote_by_user', { voter: userId });
+          await respond(`<@${userId}>, the polls are closed, your bet has not been placed!!
+          ${votedFor && `\nYour current bet is for ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\`: ${TEAMS[votedFor].members.captain.emoji} <@${TEAMS[votedFor].members.captain.id}> and ${TEAMS[votedFor].members.padawan.emoji} <@${TEAMS[votedFor].members.padawan.id}>`}`);
+          return;
+        }
+
         await pg.formattedQuery('insert_vote', { userId, teamId });
         console.log(JSON.stringify(body))
         await respond(`<@${userId}>, you have just voted for ${teamId}`);
