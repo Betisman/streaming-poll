@@ -1,0 +1,25 @@
+CREATE TYPE USER_TYPE AS ENUM ('admin', 'user');
+
+CREATE TABLE IF NOT EXISTS "user" (
+  id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+  slackId VARCHAR(255) NOT NULL UNIQUE,
+  user_type USER_TYPE NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS user_slackId ON "user" (slackId);
+
+CREATE TYPE POLL_STATUS AS ENUM ('open', 'closed');
+
+CREATE TABLE IF NOT EXISTS settings (
+  id UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+  readable_id VARCHAR(255) NOT NULL,
+  event_name VARCHAR(255) NOT NULL,
+  poll_status POLL_STATUS NOT NULL,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS settings_poll_status ON settings (poll_status);
+CREATE INDEX IF NOT EXISTS settings_readable_id ON settings (readable_id);

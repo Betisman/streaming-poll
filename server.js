@@ -7,7 +7,9 @@ const db = require('./db')();
 
 (async () => {
   const pg = await db.start();
-
+  
+  const EVENT_READABLE_ID = 'one-battle-beyond';
+  
   const slackApp = new App({
     token: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -15,7 +17,7 @@ const db = require('./db')();
     appToken: process.env.SLACK_APP_TOKEN, // add this
     port: process.env.SLACK_PORT || 3001,
   });
-
+  
   const COLORS = {
     green: 'rgb(75, 192, 192)',
     red: 'rgb(255, 99, 132)',
@@ -105,6 +107,27 @@ const db = require('./db')();
     await pg.query('truncate_vote');
     console.warn(`Dracarys executed!!`)
     res.json({ message: 'Dracarys executed!!' });
+  });
+
+  app.get('/polls_status', async (req, res) => {
+    const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
+    res.json({ pollStatus });
+  });
+
+  app.post('/close_polls', async (req, res) => {
+    const { rowCount } = await pg.formattedQuery('close_poll', { readableId: EVENT_READABLE_ID });
+    console.log(rowCount)
+    const message = rowCount ? `Poll ${EVENT_READABLE_ID} closed!!` : `Poll ${EVENT_READABLE_ID} was already closed!!`;
+    console.log(message);
+    res.json({ message });
+  });
+
+  app.post('/open_polls', async (req, res) => {
+    const { rowCount } = await pg.formattedQuery('open_poll', { readableId: EVENT_READABLE_ID });
+    console.log(rowCount)
+    const message = rowCount ? `Poll ${EVENT_READABLE_ID} open!!` : `Poll ${EVENT_READABLE_ID} was already open!!`;
+    console.log(message);
+    res.json({ message });
   });
 
   app.listen(process.env.API_PORT, () => console.log(`API listening on port ${process.env.API_PORT}`));
