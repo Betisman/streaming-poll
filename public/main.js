@@ -26,8 +26,14 @@ const myChart = new Chart(
 const myInterval = setInterval(() => {
   fetch('/scores')
     .then(res => res.json())
-    .then(data => {
-      myChart.data.datasets[0].data = data;
+    .then(({ labels, data, colors }) => {
+      myChart.data = {
+        datasets: [{
+          data,
+          backgroundColor: colors,
+        }],
+        labels,
+      };
       myChart.update();
     })
     .catch(() => clearInterval(myInterval))

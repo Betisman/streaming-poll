@@ -6,13 +6,8 @@ const { battleCommand } = require('./blocks/battleCommand');
 const db = require('./db')();
 
 (async () => {
+  const pg = await db.start();
 
-  console.log(db.toString())
-  const pepe = await db.start();
-  console.log(pepe)
-  
-  const app = express();
-  
   const slackApp = new App({
     token: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -20,26 +15,35 @@ const db = require('./db')();
     appToken: process.env.SLACK_APP_TOKEN, // add this
     port: process.env.SLACK_PORT || 3001,
   });
-  
+
+  const COLORS = {
+    green: 'rgb(75, 192, 192)',
+    red: 'rgb(255, 99, 132)',
+    yellow: 'rgb(255, 205, 86)',
+    blue: 'rgb(54, 162, 235)',
+  }
+
   const TEAMS = {
-    SMILING_DOG: { 
+    SMILING_DOG: {
       name: 'Smiling Dog',
       emoji: ':smiling-dog:',
       style: 'primary',
       members: { captain: { id: 'U596QGDRN', emoji: ':betis-head:' }, padawan: { id: 'U039R686A7Q', emoji: ':andrea_calvo:' } },
+      color: COLORS.green,
     },
     DEBUGGING_DEMONS: {
       name: 'Debugging Demons',
       emoji: ':imp:',
       style: 'danger',
       members: { captain: { id: 'UKQ93Q8F5', emoji: ':ulises_hype:' }, padawan: { id: 'U02NV03PE58', emoji: ':edu_head:' } },
+      color: COLORS.red,
     }
   }
-  
+
   const ROUND = 1;
-  
+
   const EVENT_NAME = 'One Battle Beyond';
-  
+
   slackApp.command('/battle', async ({ command, say, ack }) => {
     console.log('battle!!')
     await ack();
@@ -63,56 +67,47 @@ const db = require('./db')();
     try {
       console.log(JSON.stringify(body))
       const [action] = body?.actions;
-      const userId = body.user.id;
-      const value = JSON.parse(action.value);
-      console.log(value)
       if (body.actions) {
+        const userId = body.user.id;
+        const value = JSON.parse(action.value);
+        const { teamId } = value;
+
+        await pg.formattedQuery('insert_vote', { userId, teamId });
         console.log(JSON.stringify(body))
-        await respond(`<@${userId}>, you have just voted for ${value.teamId}`);
+        await respond(`<@${userId}>, you have just voted for ${teamId}`);
       }
     } catch (error) {
       console.error(error);
     }
   })
-  
+
   slackApp.start();
+
+  const app = express();
+
+  app.use(cors());
+  app.use(express.static('public'));
+  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json());
+  app.get('/', (req, res) => {
+    return res.send(`${EVENT_NAME} API`);
+  });
+
+  app.get('/scores', async (req, res) => {
+    // const { rows } = await pg.formattedQuery('get_scores');
+    const { rows } = await pg.formattedQuery('get_last_vote_scores');
+    console.log(rows)
+    const result = rows.reduce((acc, row) => console.log(row.votedfor) || ({ ...acc, labels: [...acc.labels, row.votedfor], data: [...acc.data, row.votes], colors: [...acc.colors, TEAMS[row.votedfor].color]}), { labels: [], data: [], colors: [] });
+    res.json(result);
+  });
+
+  app.post('/dracarys', async (req, res) => {
+    await pg.query('truncate_vote');
+    console.warn(`Dracarys executed!!`)
+    res.json({ message: 'Dracarys executed!!' });
+  });
+
+  app.listen(process.env.API_PORT, () => console.log(`API listening on port ${process.env.API_PORT}`));
+
+
 })();
-
-
-// const BAUMANN_USER = process.env.BAUMANN_USER || 'baumann';
-// const LUCAS_USER = process.env.LUCAS_USER || 'lucas';
-// const PORT = process.env.PORT || 3000;
-
-// let results = [1, 1];
-// app.use(cors());
-// app.use(express.static('public'));
-// app.use(express.urlencoded({ extended: true }));
-// app.use(express.json());
-// app.get('/', (req, res) => {
-//   return res.send('CSS Battle API');
-// });
-// app.get('/scores', (req, res) => {
-//   res.json(results);
-// });
-
-// app.post('/vote', (req, res) => {
-//   console.log('--------------------', JSON.stringify(req.body))
-//   if (req.body.text.includes(BAUMANN_USER)) {
-//     results[0] = results[0] + 1;
-//   }
-//   if (req.body.text.includes(LUCAS_USER)) {
-//     results[1] = results[1] + 1;
-//   }
-//   return res.send('Tu voto fue registrado');
-// });
-
-// app.get('/reset', (req, res) => {
-//   results = [1, 1];
-//   return res.json({ success: true });
-// });
-
-// slackApp.message('hello', ({ message, say }) => {
-//   say(`Hello, <@{message.user}>!! It's ${new Date()}`);
-// });
-
-// app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
