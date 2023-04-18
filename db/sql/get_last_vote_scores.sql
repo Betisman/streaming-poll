@@ -1,8 +1,8 @@
 WITH last_votes AS (
-  SELECT DISTINCT ON (voter) voter, votedFor, votedAt
+  SELECT DISTINCT ON (voter) voter, voted_for, voted_at
   FROM vote
-  ORDER BY voter, votedAt DESC
+  ORDER BY voter, voted_at DESC
 )
-SELECT votedFor, COUNT(*) as votes
+SELECT voted_for, COUNT(*) as votes
 FROM last_votes
-GROUP BY votedFor;
+GROUP BY voted_for;

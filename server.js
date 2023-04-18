@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const { App } = require('@slack/bolt');
 const { battleCommand } = require('./blocks/battleCommand');
+const { votedMessage } = require('./blocks/votedMessage');
+const { getChart } = require('./chart');
 const db = require('./db')();
 
 (async () => {
@@ -46,6 +48,15 @@ const db = require('./db')();
 
   const EVENT_NAME = 'One Battle Beyond';
 
+  const getScores = async () => {
+    // const { rows } = await pg.formattedQuery('get_scores');
+    const { rows } = await pg.formattedQuery('get_last_vote_scores');
+    console.log(rows)
+    const result = rows.reduce((acc, row) => console.log(row.voted_for) || ({ ...acc, labels: [...acc.labels, row.voted_for], data: [...acc.data, row.votes], colors: [...acc.colors, TEAMS[row.voted_for].color] }), { labels: [], data: [], colors: [] });
+    console.log(result)
+    return result;
+  }
+
   slackApp.command('/battle', async ({ command, say, ack }) => {
     console.log('battle!!')
     await ack();
@@ -80,14 +91,18 @@ const db = require('./db')();
 
         if (pollStatus === 'closed') {
           const { rows: [{ voted_for: votedFor }] } = await pg.formattedQuery('select_last_vote_by_user', { voter: userId });
-          await respond(`<@${userId}>, the polls are closed, your bet has not been placed!!
-          ${votedFor && `\nYour current bet is for ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\`: ${TEAMS[votedFor].members.captain.emoji} <@${TEAMS[votedFor].members.captain.id}> and ${TEAMS[votedFor].members.padawan.emoji} <@${TEAMS[votedFor].members.padawan.id}>`}`);
+          const scores = await getScores();
+          const chart = getChart({ ...scores, eventName: EVENT_NAME });
+          await respond({ blocks: votedMessage({ pollStatus, userId, teamId, eventName: EVENT_NAME, chart, TEAMS }) });
+          // await respond(`<@${userId}>, the polls are closed, your bet has not been placed!!
+          // ${votedFor && `\nYour current bet is for ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\`: ${TEAMS[votedFor].members.captain.emoji} <@${TEAMS[votedFor].members.captain.id}> and ${TEAMS[votedFor].members.padawan.emoji} <@${TEAMS[votedFor].members.padawan.id}>`}`);
           return;
         }
 
         await pg.formattedQuery('insert_vote', { userId, teamId });
-        console.log(JSON.stringify(body))
-        await respond(`<@${userId}>, you have just voted for ${teamId}`);
+        const scores = await getScores();
+        const chart = getChart({ ...scores, eventName: EVENT_NAME });
+        await respond({ blocks: votedMessage({ pollStatus, userId, teamId, eventName: EVENT_NAME, chart }) });
       }
     } catch (error) {
       console.error(error);
@@ -96,7 +111,6 @@ const db = require('./db')();
 
   slackApp.action({ block_id: 'admin_open_close_polls' }, async ({ ack, body, respond }) => {
     await ack();
-    console.log('admin_open_close_polls!');
     try {
       console.log(JSON.stringify(body))
       const [action] = body?.actions;
@@ -132,10 +146,7 @@ const db = require('./db')();
   });
 
   app.get('/scores', async (req, res) => {
-    // const { rows } = await pg.formattedQuery('get_scores');
-    const { rows } = await pg.formattedQuery('get_last_vote_scores');
-    console.log(rows)
-    const result = rows.reduce((acc, row) => console.log(row.votedfor) || ({ ...acc, labels: [...acc.labels, row.votedfor], data: [...acc.data, row.votes], colors: [...acc.colors, TEAMS[row.votedfor].color]}), { labels: [], data: [], colors: [] });
+    const result = await getScores();
     res.json(result);
   });
 

@@ -1,1 +1,1 @@
-INSERT INTO vote (voter, votedFor) VALUES (%L:userId, %L:teamId);
+INSERT INTO vote (voter, voted_for) VALUES (%L:userId, %L:teamId);
