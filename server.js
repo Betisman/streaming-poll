@@ -61,7 +61,13 @@ const db = require('./db')();
     console.log('battle!!')
     await ack();
     const { user_id: userId, text, channel_id: channelId } = command;
-    const { rows: [{ user_type: userType }] } = await pg.formattedQuery('select_user', { slackId: userId });
+    const rows = await pg.formattedQuery('select_user', { slackId: userId });
+    // console.log(rows)
+    let userType;
+    if (rows.rowCount) {
+      ([{ user_type: userType }] =  rows);
+    }
+    // const { rows: [{ user_type: userType  }] } = await pg.formattedQuery('select_user', { slackId: userId });
     const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
     const blocks = battleCommand({ teams: TEAMS, round: ROUND, eventName: EVENT_NAME, userId, pollStatus, userType });
     const block = {
