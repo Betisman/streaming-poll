@@ -2,11 +2,11 @@ const data = {
   datasets: [{
     data: [1, 1],
     backgroundColor: [
-      'rgb(224, 224, 224)',
-      'rgb(0, 143, 95)',
+      'rgb(75, 192, 192)',
+      'rgb(255, 99, 132)',
     ],
-    borderWidth: 6,
-    borderColor: 'rgb(26, 26, 26)',
+    borderWidth: 2,
+    borderColor: 'rgb(255, 255, 255)',
   }]
 };
 
