@@ -9,9 +9,10 @@ const db = require('./db')();
 
 (async () => {
   const pg = await db.start();
-  
+
   const EVENT_READABLE_ID = 'one-battle-beyond';
-  
+  const POST_MESSAGE_CHANNEL = process.env.POST_MESSAGE_CHANNEL;
+
   const slackApp = new App({
     token: process.env.SLACK_BOT_TOKEN,
     signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -19,7 +20,7 @@ const db = require('./db')();
     appToken: process.env.SLACK_APP_TOKEN, // add this
     port: process.env.SLACK_PORT || 3001,
   });
-  
+
   const COLORS = {
     green: 'rgb(75, 192, 192)',
     red: 'rgb(255, 99, 132)',
@@ -61,13 +62,13 @@ const db = require('./db')();
     console.log('battle!!')
     await ack();
     const { user_id: userId, text, channel_id: channelId } = command;
-    const rows = await pg.formattedQuery('select_user', { slackId: userId });
-    // console.log(rows)
+    const { rows } = await pg.formattedQuery('select_user', { slackId: userId });
+
     let userType;
-    if (rows.rowCount) {
-      ([{ user_type: userType }] =  rows);
+    if (rows.length) {
+      ([{ user_type: userType }] = rows);
     }
-    // const { rows: [{ user_type: userType  }] } = await pg.formattedQuery('select_user', { slackId: userId });
+
     const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
     const blocks = battleCommand({ teams: TEAMS, round: ROUND, eventName: EVENT_NAME, userId, pollStatus, userType });
     const block = {
@@ -95,13 +96,13 @@ const db = require('./db')();
 
         const { rows: [{ poll_status: pollStatus }] } = await pg.formattedQuery('select_settings', { readableId: EVENT_READABLE_ID });
 
+        const { rows } = await pg.formattedQuery('select_last_vote_by_user', { voter: userId });
+        const votedFor = rows.length && rows[0].voted_for;
+
         if (pollStatus === 'closed') {
-          const { rows: [{ voted_for: votedFor }] } = await pg.formattedQuery('select_last_vote_by_user', { voter: userId });
           const scores = await getScores();
           const chart = getChart({ ...scores, eventName: EVENT_NAME });
-          await respond({ blocks: votedMessage({ pollStatus, userId, teamId, eventName: EVENT_NAME, chart, TEAMS }) });
-          // await respond(`<@${userId}>, the polls are closed, your bet has not been placed!!
-          // ${votedFor && `\nYour current bet is for ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\`: ${TEAMS[votedFor].members.captain.emoji} <@${TEAMS[votedFor].members.captain.id}> and ${TEAMS[votedFor].members.padawan.emoji} <@${TEAMS[votedFor].members.padawan.id}>`}`);
+          await respond({ blocks: votedMessage({ pollStatus, userId, teamId: votedFor, eventName: EVENT_NAME, chart, TEAMS }) });
           return;
         }
 
@@ -109,6 +110,13 @@ const db = require('./db')();
         const scores = await getScores();
         const chart = getChart({ ...scores, eventName: EVENT_NAME });
         await respond({ blocks: votedMessage({ pollStatus, userId, teamId, eventName: EVENT_NAME, chart }) });
+        console.log(!!rows.length, votedFor.teamId, votedFor === teamId)
+        const message = !rows.length ? `:mailbox: <@${userId}> has voted for ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\`` :
+          {
+            true: `:repeat: <@${userId}> has re-voted for ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\``,
+            false: `:sirens: <@${userId}> has changed their vote ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\` ${TEAMS[votedFor].members.captain.emoji} ${TEAMS[votedFor].members.padawan.emoji} :arrow_right: ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\` ${TEAMS[teamId].members.captain.emoji} ${TEAMS[teamId].members.padawan.emoji}`,
+          }[votedFor === teamId];
+        await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
       }
     } catch (error) {
       console.error(error);
@@ -129,10 +137,12 @@ const db = require('./db')();
 
         const event = value === 'open_polls' ? 'opened' : 'closed';
         const emoji = {
-          open_polls: ':white_check_mark:',
-          close_polls: ':x:',
+          open_polls: ':heart_diamond:',
+          close_polls: ':party_kirby:',
         }[value];
-        await respond(`${emoji} :mailbox: <@${userId}>, have just ${event} the polls!`);
+        const message = `${emoji} <@${userId}> have just ${event} the polls!`
+        await respond(message);
+        await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
       }
     } catch (error) {
       console.error(error);
