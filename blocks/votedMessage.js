@@ -11,7 +11,7 @@ const votedMessage = ({ pollStatus, userId, teamId, eventName, chart, TEAMS }) =
     type: 'section',
     text: {
       type: 'mrkdwn',
-      text: `<@${userId}>, you have just voted for \`*${teamId}*\``,
+      text: `<@${userId}>, you have just voted for \`${teamId}\``,
     },
   }] : []),
   ...(pollStatus === 'closed' ? [{

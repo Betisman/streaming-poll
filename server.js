@@ -31,7 +31,7 @@ const db = require('./db')();
   const TEAMS = {
     SMILING_DOG: {
       name: 'Smiling Dog',
-      emoji: ':dagger:',
+      emoji: ':dagger_knife:',
       style: 'primary',
       members: { captain: { id: 'U596QGDRN', emoji: ':betis-head:' }, padawan: { id: 'U039R686A7Q', emoji: ':andrea_calvo:' } },
       color: COLORS.green,
@@ -77,9 +77,7 @@ const db = require('./db')();
       text: EVENT_NAME,
       ...blocks,
     }
-    console.log(JSON.stringify(blocks))
-    console.log('--------------------------')
-    console.log(JSON.stringify(block))
+    console.log('blocks', JSON.stringify(blocks))
     await slackApp.client.chat.postEphemeral(block);
   });
 
@@ -111,10 +109,10 @@ const db = require('./db')();
         const chart = getChart({ ...scores, eventName: EVENT_NAME });
         await respond({ blocks: votedMessage({ pollStatus, userId, teamId, eventName: EVENT_NAME, chart }) });
         console.log(!!rows.length, votedFor.teamId, votedFor === teamId)
-        const message = !rows.length ? `:mailbox: <@${userId}> has voted for ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\`` :
+        const message = !rows.length ? `:mailbox: <@${userId}> has voted for ${TEAMS[teamId].emoji}\`${TEAMS[teamId].name}\`${TEAMS[teamId].emoji}` :
           {
-            true: `:repeat: <@${userId}> has re-voted for ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\``,
-            false: `:sirens: <@${userId}> has changed their vote ${TEAMS[votedFor].emoji} \`${TEAMS[votedFor].name}\` ${TEAMS[votedFor].members.captain.emoji} ${TEAMS[votedFor].members.padawan.emoji} :arrow_right: ${TEAMS[teamId].emoji} \`${TEAMS[teamId].name}\` ${TEAMS[teamId].members.captain.emoji} ${TEAMS[teamId].members.padawan.emoji}`,
+            true: `:repeat: <@${userId}> has re-voted for ${TEAMS[teamId].emoji}\`${TEAMS[teamId].name}\`${TEAMS[teamId].emoji}`,
+            false: `:sirens: <@${userId}> has changed their vote ${TEAMS[votedFor].emoji}\`${TEAMS[votedFor].name}\`${TEAMS[votedFor].emoji} ${TEAMS[votedFor].members.captain.emoji} ${TEAMS[votedFor].members.padawan.emoji} :arrow_right: ${TEAMS[teamId].emoji}\`${TEAMS[teamId].name}\`${TEAMS[teamId].emoji} ${TEAMS[teamId].members.captain.emoji} ${TEAMS[teamId].members.padawan.emoji}`,
           }[votedFor === teamId];
         await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
       }
