@@ -6,6 +6,7 @@ const { battleCommand } = require('./blocks/battleCommand');
 const { votedMessage } = require('./blocks/votedMessage');
 const { getChart } = require('./chart');
 const db = require('./db')();
+const axios = require('axios');
 
 (async () => {
   const pg = await db.start();
@@ -114,7 +115,21 @@ const db = require('./db')();
             true: `:repeat: <@${userId}> has re-voted for ${TEAMS[teamId].emoji}\`${TEAMS[teamId].name}\`${TEAMS[teamId].emoji}`,
             false: `:sirens: <@${userId}> has changed their vote ${TEAMS[votedFor].emoji}\`${TEAMS[votedFor].name}\`${TEAMS[votedFor].emoji} ${TEAMS[votedFor].members.captain.emoji} ${TEAMS[votedFor].members.padawan.emoji} :arrow_right: ${TEAMS[teamId].emoji}\`${TEAMS[teamId].name}\`${TEAMS[teamId].emoji} ${TEAMS[teamId].members.captain.emoji} ${TEAMS[teamId].members.padawan.emoji}`,
           }[votedFor === teamId];
-        await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
+
+        try {
+          await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
+        } catch (error) {
+          console.error('error sending message');
+          console.error(error);
+        }
+
+        try {
+          console.log('posting to', process.env.EXTERNAL_API);
+          await axios.post(process.env.EXTERNAL_API, { message, userId, existingVote: votedFor, newVote: teamId }, { headers: { 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('error sending socket message');
+          console.error(error);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -140,7 +155,20 @@ const db = require('./db')();
         }[value];
         const message = `${emoji} <@${userId}> have just ${event} the polls!`
         await respond(message);
-        await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
+        try {
+          await slackApp.client.chat.postMessage({ channel: POST_MESSAGE_CHANNEL, text: message });
+        } catch (error) {
+          console.error('error sending message');
+          console.error(error);
+        }
+
+        try {
+          console.log('posting to', process.env.EXTERNAL_API);
+          await axios.post(process.env.EXTERNAL_API, { message, userId, existingVote: votedFor, newVote: teamId }, { headers: { 'Content-Type': 'application/json' } });
+        } catch (error) {
+          console.error('error sending socket message');
+          console.error(error);
+        }
       }
     } catch (error) {
       console.error(error);
