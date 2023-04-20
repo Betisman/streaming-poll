@@ -56,7 +56,7 @@ const config = {
         labels: {
           name: {
             align: 'top',
-            font: { size: 20, family: 'luminari' },
+            font: { size: 10, family: 'luminari' },
             formatter: (value, context) => TEAMS[context.chart.data.labels[context.dataIndex]].label,
           },
           value: {
