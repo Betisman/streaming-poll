@@ -1,0 +1,10 @@
+{
+  "name": "battle-poll",
+  "version": "1.0.0",
+  "scm": {
+    "remote": "https://github.com/Betisman/streaming-poll.git",
+    "branch": "main",
+    "commit": "a36fa745d8054db86d1db4457f9f9efdb34f33a2"
+  },
+  "timestamp": "2023-04-19T19:52:21.962Z"
+}

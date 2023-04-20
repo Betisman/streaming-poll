@@ -31,14 +31,14 @@ const db = require('./db')();
   const TEAMS = {
     SMILING_DOG: {
       name: 'Smiling Dog',
-      emoji: ':smiling-dog:',
+      emoji: ':dagger:',
       style: 'primary',
       members: { captain: { id: 'U596QGDRN', emoji: ':betis-head:' }, padawan: { id: 'U039R686A7Q', emoji: ':andrea_calvo:' } },
       color: COLORS.green,
     },
     DEBUGGING_DEMONS: {
       name: 'Debugging Demons',
-      emoji: ':imp:',
+      emoji: ':shield:',
       style: 'danger',
       members: { captain: { id: 'UKQ93Q8F5', emoji: ':ulises_hype:' }, padawan: { id: 'U02NV03PE58', emoji: ':edu_head:' } },
       color: COLORS.red,
